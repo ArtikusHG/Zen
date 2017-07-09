@@ -34,5 +34,4 @@ Search the package in cydia (it's in the modmyi default repo), or compile the so
 ## Bug fix / self-solve (for both bugs)
 
 Download a black image and set it as wallpaper. Also for the app switcher I have a fix in the source code, but this is a very dirty hack which is disabled in the modmyi package. It cuses memory overload, and makes the device respring randomly. So if you are a developer, you'll understad how to enable it if you need it. If you're a user, just use a black wallpaper.
-
 For example, [here](https://www.androidcentral.com/sites/androidcentral.com/files/styles/w550h500/public/wallpapers/pure-black-wallpaper-159.jpg?itok=F7s-qzpr)'s a black wallpaper. Just download it, got to photos, click "share" then "set wallpaper" and "set both".
