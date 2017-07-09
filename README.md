@@ -6,10 +6,8 @@ A "theme tweak" for a minimal look of iOS
 ## Requirements
 
 This tweak is optimal
- - iOS 9.0.2 jailbroken
+ - iOS from 7 to 10 jailbroken
  - iPhone 5, 5s or SE (spacing on icons are optimised for this)
- 
-Also confirmed to work on 7.0.2/5C and 8.4/5S.
  
 
 ## How it looks like
