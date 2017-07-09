@@ -19,7 +19,7 @@ Looks something like this, but better on the actual device.
 
 ## How to get it 
 
-Search the paclage in cydia (it's in the modmyi default repo).
+Search the package in cydia (it's in the modmyi default repo), or compile the source with theos.
 
 ## Changes I (ArtikusHG) made
 
