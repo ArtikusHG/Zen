@@ -1,7 +1,16 @@
+// We'll need this stuff later
+UIView *_uiview = nil;
+id centeredDateView = nil;
+@interface SBDashBoardView : UIView {
+    UIView *_dateView;
+}
+@end 
+
+@interface SBFLockScreenDateView : UIView
+@end
 //
 // Just some headers
 //
-
 @interface SBApplication
   -(NSString*)bundleIdentifier;
 @end 
@@ -41,7 +50,7 @@
 	// Could use -- IS_SPRINGBOARD or BUNDLE CHECKS -- as well
     SpringBoard *c = (SpringBoard*)[objc_getClass("SpringBoard") sharedApplication];
     if( c != nil ){
-    	// Check if we're in an app or on springboard
+	// Check if we're in an app or on springboard
 	    NSString *identifier = [[c _accessibilityFrontMostApplication] bundleIdentifier];
 	    BOOL springboardIsTopMostApp = identifier == nil ? YES : NO;
 
@@ -53,16 +62,16 @@
 		// Debug
 	    // NSLog(@"---");
 	    // NSLog(@"In Springboard process - %@", c?@"YES":@"NO" );
-	    // NSLog(@"Inside app             - %@", springboardIsTopMostApp?@"NO":@"YES");
+	    // NSLog(@"Inside app	      - %@", springboardIsTopMostApp?@"NO":@"YES");
 	    // NSLog(@"Inside home screen     - %@", springboardIsTopMostApp?@"YES":@"NO");
-	    // NSLog(@"Locked                 - %@", [lsm isUILocked]?@"YES":@"NO");
+	    // NSLog(@"Locked		      - %@", [lsm isUILocked]?@"YES":@"NO");
 	    // NSLog(@"---");
 
 		// Do them checks
 	    if( springboardIsTopMostApp || [lsm isUILocked] ){
 			[self setForegroundColor:[UIColor clearColor]];
 	    }else{
-	    	// Does orig. I.e. shows the status bar.
+		// Does orig. I.e. shows the status bar.
 	    }
 	}
 
@@ -78,9 +87,20 @@
 
 // Gone.
 +(BOOL)canShowLabelAccessoryView{
-	return NO;
+       return NO;
 }
-
+// canShowLabelAccessoryView doesn't exist in iOS 10, so we set the labels alpha to 0.0 and they become invisible.
+- (void)_applyIconLabelAlpha:(double)arg1{
+       %orig(0.0);
+}
+// Another just to be sure
+- (void)setLabelHidden:(_Bool)arg1{
+       %orig(YES);
+}
+// Finally, we make _updateLabel NSLog some stuff instead of updating labels, so it doesn't update the labels when we switch between pages etc.
+- (void)_updateLabel{
+       NSLog(@"Labels are shit, don't update them.");
+}
 // Move the badge to the bottom center of the icon.
 // This affects the "beta" and "new" accesoryviews as well. But it's ok. Since above we disabled them.
 -(CGRect)_frameForAccessoryView{
@@ -99,9 +119,13 @@
 
 // Makes the badge content empty
 +(id)_createImageForText:(id)arg1 highlighted:(_Bool)arg2{
-  return %orig(@" ",arg2);
+       return %orig(@" ", arg2);
 }
-
+// On iOS 10, anoter method exists
++ (id)_checkoutImageForText:(id)arg1 highlighted:(_Bool)arg2 {
+       return %orig(@" ", arg2);
+}
+// If you're wondering why the space instead of nil, the answer is: nil hides the small red dot. The space keeps it small.
 %end
 
 
@@ -134,7 +158,20 @@
 
 %end
 
-
+// The above code works on iOS 10, but has sone trouble with the app switcher, so we add a black UIView just above the wallpaper, but before the icons.
+// WARNING: for me tgis got random resprings. I recommend just settings the homescreen wallpaper to a black image to slove the bug.
+/*
+%hook SBHomeScreenWindow
+-(id)_initWithScreen:(id)arg1 layoutStrategy:(id)arg2 debugName:(id)arg3 rootViewController:(id)arg4 scene:(id)arg5 {
+%orig;
+_uiview = [[UIView alloc] initWithFrame:CGRectMake(0,0,500,700)];
+_uiview.backgroundColor = [UIColor blackColor];
+[((UIWindow *)%orig) addSubview: _uiview];
+[_uiview release];
+return %orig;
+}
+%end
+*/
 %hook SBLockScreenView
 
 -(id)_defaultSlideToUnlockText{
@@ -161,7 +198,6 @@
 	grabber.alpha = 0.011f; // Almost invisible, but over 0.01 will still render
 	return grabber;
 }
-
 %end
 
 
@@ -171,7 +207,6 @@
 -(double)timeBaselineOffsetFromOrigin{
 	return -80.0;
 }
-
 %end
 
 
@@ -197,10 +232,9 @@
 	// Do nothing to prevent the battery charge level on the LS
 	// when you unlock the device. I want to move it but.. meh
 }
-
 // Uncomment this to disable the timer on the LS. Good for dev.
 // -(BOOL)_disableIdleTimer:(BOOL)arg1{
-// 	return %orig(YES);
+//	return %orig(YES);
 // }
 
 %end
@@ -224,7 +258,6 @@
 
 %end
 
-
 %hook SBRootIconListView
 
 //
@@ -244,4 +277,51 @@
 }
 
 %end
+// On iOS 10, slide to unlock was killed (R.I.P.) and press home to unlock was introduced, so let's hide it.
+%hook SBDashBoardMainPageView
+- (void)_layoutCallToActionLabel {
+	NSLog(@"Don't layout it, just don't.");
+}
+%end
+// On iOS 10, we have dots on LS, so let's hide them.
+%hook SBDashBoardPageControl
+-(id)_indicatorViewEnabled:(_Bool)arg1 index:(long long)arg2 {
+       return %orig(NO, arg2);
+}
+-(id)initWithFrame:(CGRect)frame {
+       return nil;
+}
+%end
+// Let's hide the LS battery on iOS 10
+// Thanks to @CydiaGeek for the method
+%hook _SBLockScreenSingleBatteryChargingView
+-(void) setBatteryVisible:(BOOL)arg1 {
+   %orig(NO);
+}
+%end
 
+%hook SBDashBoardChargingViewController
+-(void) _updateTextForBatteries { 
+NULL;
+}
+%end
+// HA! Time in iOS 10 moved! Thanks to @jakeashacks and @midkin
+%hook SBDashBoardView
+
+-(id)initWithFrame:(CGRect)arg1 {
+centeredDateView = %orig;
+[centeredDateView retain];
+return centeredDateView;
+}
+-(void)_layoutDateView{
+%orig;
+UIView *customDateView = ((UIView *)MSHookIvar<SBFLockScreenDateView *>(centeredDateView, "_dateView"));
+customDateView.center = CGPointMake([[UIScreen mainScreen] bounds].size.width/2, [[UIScreen mainScreen] bounds].size.height/2.2);
+}
+%end
+// We're hooking this to move notifications lower on iOS 10
+%hook SBDashBoardNotificationListViewController
+- (CGRect)_suggestedListViewFrame {
+	return CGRectMake(%orig.origin.x, %orig.origin.y + 125, %orig.size.width, %orig.size.height - 125);
+}
+%end
